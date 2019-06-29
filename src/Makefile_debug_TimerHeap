@@ -1,0 +1,13 @@
+TARGET=TimerHeapTest
+OBJECTS=time_heap.o common_functions.o
+
+$(TARGET):$(OBJECTS)
+	g++ -g -o $(TARGET) $(OBJECTS)
+
+common_functions.o:common_functions.h
+	g++ -std=c++11 -g -c common_functions.cpp
+time_heap.o:time_heap.h
+	g++ -DDEBUG -std=c++11 -g -c time_heap.cpp
+.PHONY:clean
+clean:
+	-rm TimerHeapTest *.o
