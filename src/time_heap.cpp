@@ -256,6 +256,9 @@ void TimerHeap::resize(int cap)
 #include<sys/epoll.h>
 #include<errno.h>
 #include<stdlib.h>
+#include<iostream>
+using namespace std;
+
 void cb_func()
 {
 	struct timespec cur;
@@ -271,84 +274,101 @@ static void Test()
 		//bool stop;
 		std::cin>>cap;
 		TimerHeap heap(cap);
+
 		int epoll_fd = epoll_create(5);
 		struct epoll_event evlist[2];
+
 		evlist[0].data.fd = 0;//input
 		evlist[0].events = EPOLLIN | EPOLLET;
 		int ret = epoll_ctl(epoll_fd,EPOLL_CTL_ADD,0,&evlist[0]);
 		assert(ret == 0);
+
 		int time_fd = timerfd_create(CLOCK_MONOTONIC,TFD_NONBLOCK);
 		evlist[1].data.fd = time_fd;
 		evlist[1].events = EPOLLIN|EPOLLET;
 		ret = epoll_ctl(epoll_fd,EPOLL_CTL_ADD,time_fd,&evlist[1]);
 		assert(ret == 0);
+		
+		cout<<"==== time_fd : "<<time_fd<<endl;
+
 		while(true)
 		{
 			log("Begin epoll_wait!\n");
-			int nfds = epoll_wait(epoll_fd,evlist,2,-1);
+			int nfds = epoll_wait(epoll_fd,evlist,2,-1);  // 在这个地方测试，需要输入一行任意字符，才会继续执行，不太明白
+			cout<<"=== nfds : "<<nfds<<endl;
+			
+				
 			if(nfds < 0 && errno != EINTR)
-			{
+			{       
 				log("epoll_wait failed \n");
 				return ;
 			}
+
 			for(int i = 0; i < nfds; ++i)
 			{
+				cout<<"==== i= "<<i<<endl;
 				if(evlist[i].data.fd == 0)
 				{
 					log("read input!\n");
 					char tmp;
+					cout<<"input a char : '+' or 'p' or 'q' or 'u' or 'n'"<<endl;
 					std::cin>>tmp;
-					while(tmp!='e')
-					{
-						Timer *t=NULL;
-						switch(tmp)
-						{
-						case '+':
-							int time;
-							std::cin>>time;
-							t = new(std::nothrow) Timer(time);
-							t->cb_funct = cb_func;
-							heap.InsertTimer(*t);
-							if(heap.size()==1)
-							{
-								struct itimerspec ts;
-								memset(&ts,0,sizeof(ts));
-								ts.it_value.tv_sec = heap.Min().Expire();
-								int flag = TIMER_ABSTIME;
-								int ret = timerfd_settime(time_fd,flag,&ts,NULL);
-								assert(ret == 0);
-							}
-							break;
-						case 'p':
-							heap.PrintHeap();
-							break;
-						case'u':
-							int index;
-							std::cin>>index;
-							if(index<=heap.size())
-							{
-								heap.PrintHeap();
-								log("\n");
-								heap._heap[index]->AdjustTimer(10);
-								heap.UpdateTimer(*heap._heap[index]);
-								heap.PrintHeap();
-							}
-							break;
-						case'n':
-							struct timespec cur;
-							clock_gettime(CLOCK_MONOTONIC,&cur);
-							log("Time now: %ld\n",cur.tv_sec);
-							break;
-						case '-':
-							break;
-						case'q':
-							return;
-						default:
-							break;
-						}
-					std::cin>>tmp;
-					}
+
+					//while(tmp!='e')
+					//{
+					 	Timer *t=NULL;
+					 	switch(tmp)
+					 	{
+					 	case '+':
+					 		int time;
+					 		std::cin>>time;
+					 		t = new(std::nothrow) Timer(time);
+					 		t->cb_funct = cb_func;
+					 		heap.InsertTimer(*t);
+					 		if(heap.size()==1)
+					 		{
+					 			struct itimerspec ts;
+					 			memset(&ts,0,sizeof(ts));
+					 			ts.it_value.tv_sec = heap.Min().Expire();
+					 			int flag = TIMER_ABSTIME;
+					 			int ret = timerfd_settime(time_fd,flag,&ts,NULL);
+					 			assert(ret == 0);
+					 		}
+					 		break;
+					 	case 'p':
+					 		heap.PrintHeap();
+					 		break;
+					 	case'u':
+					 		int index;
+					 		std::cin>>index;
+					 		if(index<=heap.size())
+					 		{
+					 			heap.PrintHeap();
+					 			log("\n");
+					 			heap._heap[index]->AdjustTimer(10);
+					 			heap.UpdateTimer(*heap._heap[index]);
+					 			heap.PrintHeap();
+					 		}
+					 		break;
+					 	case'n':
+					 		struct timespec cur;
+					 		clock_gettime(CLOCK_MONOTONIC,&cur);
+					 		log("Time now: %ld\n",cur.tv_sec);
+					 		break;
+					 	case '-':
+					 		break;
+					 	case'q':
+					 		return;
+					 	default:
+					 		break;
+					 	}
+					//std::cin>>tmp;
+					// while end {}
+					//}
+				// if end {}
 				}
+			
+				// time_fd
 				else if(evlist[i].data.fd ==time_fd)
 				{
 					log("Timer trick!\n");
@@ -366,14 +386,17 @@ static void Test()
 				}
 				else
 					continue;
+			//for end {}
 			}
-
+			
+		//while end
 		}
 
 
-
+	//while end		
 	}
 }
+
 int main()
 {
 	Test();
